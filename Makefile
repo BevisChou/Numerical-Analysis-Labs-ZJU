@@ -1,5 +1,8 @@
 OUT = main
 
+lab2: src/lab2.c
+	gcc $^ -o ${OUT}
+
 lab1: src/lab1.c
 	gcc $^ -o ${OUT}
 
