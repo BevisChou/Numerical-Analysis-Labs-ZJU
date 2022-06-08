@@ -9,5 +9,8 @@ lab6: src/lab6.c
 lab7: src/lab7.c
 	gcc $^ -o ${OUT}
 
+lab8: src/lab8.c
+	gcc $^ -o ${OUT}
+
 clean:
 	$(shell rm ${OUT})
