@@ -3,6 +3,9 @@ OUT = main
 lab1: src/lab1.c
 	gcc $^ -o ${OUT}
 
+lab3: src/lab3.c
+	gcc $^ -o ${OUT}
+
 lab6: src/lab6.c
 	gcc $^ -o ${OUT}
 
