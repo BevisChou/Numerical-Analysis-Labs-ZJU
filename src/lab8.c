@@ -20,23 +20,34 @@ int main()
 }
 
 /* Your function will be put here */
-#define SIMPSON(interval, f0, f1, f2) (interval * (f0 + 4 * f1 + f2) / 6)
+#define N 1000000
+
+double Simpson(double fs[], int n, double h)
+{
+    double res = fs[0] + fs[n];
+    for (int i = 1; i < n; i += 2) {
+        res += 4 * fs[i];
+    }
+    for (int i = 2; i < n; i += 2) {
+        res += 2 * fs[i];
+    }
+    res = res * h / 3;
+    return res;
+}
 
 double Integral(double a, double b, double (*f)(double x, double y, double z), 
 double eps, double l, double t)
 {
-    double h = a + (b - a) / 4, fs[5], res1, res2;
-    for (int i = 0; i < 5; i++) {
-        fs[i] = f(a + i * h, l, t) / 100;
-        // printf("f(%lf) = %lf\n", a + i * h, fs[i]);
+    double T, h, fs[N + 1], integral_T;
+    T = M_PI / t;
+    h = T / N;
+    for (int i = 0; i <= N; i++) {
+        fs[i] = f(a + i * h, l, t);
     }
-    res1 = SIMPSON(2 * h, fs[0], fs[2], fs[4]);
-    res2 = SIMPSON(h, fs[0], fs[1], fs[2]) + SIMPSON(h, fs[2], fs[3], fs[4]);
-    // printf("res1: %lf, res2: %lf\n", res1, res2);
-    if (fabs((res1 - res2) / 16) < eps) {
-        return res2;
+    integral_T = Simpson(fs, N, h);
+    int count = floor((b - a) / T), r = ceil((b - a - count * T) / h);
+    if (r % 2) {
+        r++;
     }
-    else {
-        return Integral(a, a + 2 * h, f, eps / 2, l, t) + Integral(a + 2 * h, b, f, eps / 2, l, t);
-    }
+    return (integral_T * count + Simpson(fs, r, h)) / 100;
 }
