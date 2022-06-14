@@ -9,6 +9,9 @@ lab3: src/lab3.c
 lab4: src/lab4.c
 	gcc $^ -o ${OUT}
 
+lab5: src/lab5.c
+	gcc $^ -o ${OUT}
+
 lab6: src/lab6.c
 	gcc $^ -o ${OUT}
 
