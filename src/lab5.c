@@ -43,22 +43,11 @@ int main()
 #include <math.h>
 #include <string.h>
 
-void PrintMatrix(int n, double a[][MAX_SIZE])
+void MatCopy(int n, double src[][MAX_SIZE], double dst[][MAX_SIZE])
 {
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            printf("%lf ", a[i][j]);
-        }
-        printf("\n");
+        memcpy(dst[i], src[i], n * sizeof(double));
     }
-}
-
-void PrintVector(int n, double v[])
-{
-    for (int i = 0; i < n; i++) {
-        printf("%lf ", v[i]);
-    }
-    printf("\n");
 }
 
 void SwapDouble(double *a, double *b)
@@ -76,45 +65,66 @@ void SwapVec(int n, double a[], double b[])
     memcpy(b, temp, n * sizeof(double));
 }
 
-int Solve(int n, double a[][MAX_SIZE], double y[], double res[])
+int MaxIdx(int n, double v[])
+{
+    int res = -1;
+    double max = 0, val;
+    for (int i = 0; i < n; i++) {
+        if ((val = fabs(v[i])) > max) {
+            max = val;
+            res = i;
+        }
+    }
+    return res;
+}
+
+int Normalize(int n, double v[])
+{
+    int idx = MaxIdx(n, v);
+    double val = v[idx];
+    for (int i = 0; i < n; i++) {
+        v[i] /= val;
+    }
+    return idx;
+}
+
+
+int Solve(int n, double m[][MAX_SIZE], double b[], double res[])
 {
     int i, j, k;
-    double copy[MAX_SIZE][MAX_SIZE], coef;
+    double a[MAX_SIZE][MAX_SIZE], y[MAX_SIZE], coef;
+    MatCopy(n, m, a);
+    memcpy(y, b, n * sizeof(double));
     for (i = 0; i < n; i++) {
-        memcpy(copy[i], a[i], n * sizeof(double));
-    }
-    for (i = 0; i < n; i++) {
-        if (copy[i][i] == 0) {
-            for (j = i + 1; j < n && copy[j][i] == 0; j++);
+        if (a[i][i] == 0) {
+            for (j = i + 1; j < n && a[j][i] == 0; j++);
             if (j == n) {
                 return 1;
             }
-            SwapVec(n, copy[i], copy[j]);
+            SwapVec(n, a[i], a[j]);
             SwapDouble(&y[i], &y[j]);
         }
         for (j = i + 1; j < n; j++) {
-            coef = copy[j][i] / copy[i][i];
+            coef = a[j][i] / a[i][i];
             for (k = i; k < n; k++) {
-                copy[j][k] -= coef * copy[i][k];
+                a[j][k] -= coef * a[i][k];
             }
             y[j] -= coef * y[i];
         }
     }
     for (i = n - 1; i >= 0; i--) {
         for (j = i + 1; j < n; j++) {
-            y[i] -= copy[i][j] * res[j];
+            y[i] -= a[i][j] * res[j];
         }
-        res[i] = y[i] / copy[i][i];
+        res[i] = y[i] / a[i][i];
     }
     return 0;
 }
 
-void Transpose(int n, double a[][MAX_SIZE], double res[][MAX_SIZE])
+void Transpose(int n, double a[][MAX_SIZE])
 {
-    // variable res might point to the same location as variable a does
-    int i, j;
-    for (i = 0; i < n; i++) {
-        for (j = i + 1; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
             SwapDouble(&a[i][j], &a[j][i]);
         }
     }
@@ -130,57 +140,46 @@ int Inverse(int n, double a[][MAX_SIZE], double res[][MAX_SIZE])
             return 1;
         }
     }
-    Transpose(n, res, res);
-    // PrintMatrix(n, res);
+    Transpose(n, res);
     return 0;
 }
 
 void Multiply(int n, double a[][MAX_SIZE], double v[], double res[])
 {
-    int i, j;
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         res[i] = 0;
-        for (j = 0; j < n; j++) {
+        for (int j = 0; j < n; j++) {
             res[i] += a[i][j] * v[j];
         }
     }
 }
 
-int Normalize(int n, double v[])
+void Difference(int n, double lhs[], double rhs[], double res[])
 {
-    int i, res = -1;
-    double max = 0, val;
-    for (i = 0; i < n; i++) {
-        if ((val = fabs(v[i])) > max) {
-            max = val;
-            res = i;
-        }
+    for (int i = 0; i < n; i++) {
+        res[i] = lhs[i] - rhs[i];
     }
-    val = v[res];
-    for (i = 0; i < n; i++) {
-        v[i] /= val;
-    }
-    return res;
 }
 
 int EigenV(int n, double a[][MAX_SIZE], double *lambda, double v[], double TOL, int MAXN)
 {
     int i, idx;
-    double p = *lambda, l, b[MAX_SIZE][MAX_SIZE], last[MAX_SIZE];
+    double p = *lambda, m[MAX_SIZE][MAX_SIZE], inv[MAX_SIZE][MAX_SIZE], temp[MAX_SIZE];
+    MatCopy(n, a, m);
     for (i = 0; i < n; i++) {
-        a[i][i] -= p;
+        m[i][i] -= p;
     }
-    if (Inverse(n, a, b) != 0) {
+    if (Inverse(n, m, inv) != 0) {
         return -1;
     }
     idx = Normalize(n, v);
-    for (int i = 0; i < MAXN; i++) {
-        memcpy(last, v, n * sizeof(double));
-        Multiply(n, b, last, v);
-        l = *lambda;
+    for (i = 0; i < MAXN; i++) {
+        memcpy(temp, v, n * sizeof(double));
+        Multiply(n, inv, temp, v);
         *lambda = 1 / v[idx] + p;
         idx = Normalize(n, v);
-        if (fabs(*lambda - l) < TOL) {
+        Difference(n, v, temp, temp);
+        if (fabs(temp[MaxIdx(n, temp)]) < TOL) {
             return 1;
         }
     }
