@@ -42,15 +42,6 @@ int cmp(const void *lhs, const void *rhs)
     return 0;
 }
 
-void sample(int n, double c[], double a, double h, int idx[])
-{
-    for (int i = 0; i <= N; i++) {
-        idx[i] = i;
-        fs[i] = fabs(calc(n, c, a + i * h));
-    }
-    qsort(idx, N + 1, sizeof(int), cmp);
-}
-
 double calc(int n, double c[], double x)
 {
     double res = 0;
@@ -78,42 +69,39 @@ int newton(int n, double c[], double dc[], double x, double *res)
     return 0;
 }
 
-int trial(int n, double c[], double dc[], double *x, double EPS)
+double trial(int n, double c[], double dc[], double x, double EPS)
 {
     double ps[3], d0, d1;
-    ps[0] = *x;
+    ps[0] = x;
     // printf("---\nx0: %e\n", ps[0]);
     for (int i = 0; i < MAXI; i++) {
         if (fabs(calc(n, c, ps[0])) < ZERO) {
-            *x = ps[0];
-            return 0;
+            return ps[0];
         }
         if (newton(n, c, dc, ps[0], &ps[1]) != 0 || newton(n, c, dc, ps[1], &ps[2]) != 0) {
-            return 1;
+            return ps[0];
         }
         d0 = ps[1] - ps[0];
         d1 = ps[2] - ps[1];
         ps[0] = ps[0] - d0 * d0 / (d1 - d0);
         // printf("iter %d: %e\n", i, ps[0]);
     }
-    return 1;
+    return ps[0];
 }
 
 double Polynomial_Root(int n, double c[], double a, double b, double EPS)
 {
     int idx[N + 1];
-    double h, dc[MAXN - 1], res;
+    double h, dc[MAXN - 1], res, xs[N + 1];
     h = (b - a) / N;
-    sample(n, c, a, h, idx);
     derivative(n, c, dc);
     for (int i = 0; i <= N; i++) {
-        res = a + idx[i] * h;
-        if (trial(n, c, dc, &res, EPS) == 0) {
-            return res;
-        }
+        idx[i] = i;
+        xs[i] = trial(n, c, dc, a + i * h, EPS);
+        fs[i] = fabs(calc(n, c, xs[i]));
     }
-    // printf("failed\n");
-    return 0;
+    qsort(idx, N + 1, sizeof(int), cmp);
+    return xs[idx[0]];
 }
 
 /*
